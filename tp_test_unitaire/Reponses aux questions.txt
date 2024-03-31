@@ -1,0 +1,327 @@
+3)  il y a une erreur dans cette méthode de test. L'erreur réside dans l'utilisation de assertTrue(expected.equals(result)). Cette comparaison vérifie que les objets expected et result référencent le même objet en mémoire, ce qui ne sera généralement pas le cas même si les objets ont les mêmes valeurs. Pour comparer les valeurs des objets, il faut plutôt utiliser la méthode assertEquals fournie par JUnit.
+5)Dans ce cas , tous les test ont reussis
+
+6)@Override
+public boolean equals(Object obj) {
+    if (this == obj) {
+        return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+        return false;
+    }
+    Money other = (Money) obj;
+    return fAmount == other.fAmount && fCurrency.equals(other.fCurrency);
+}
+
+7) package fr.emse.test;
+
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
+
+public class MoneyTest {
+    private Money m12CHF;
+    private Money m14CHF;
+
+    @Before
+    public void setUp() {
+        m12CHF = new Money(12, "CHF");
+        m14CHF = new Money(14, "CHF");
+    }
+
+    @Test
+    public void testSimpleAdd() {
+        Money expected = new Money(26, "CHF");
+        Money result = m12CHF.add(m14CHF);
+        assertEquals(expected, result);
+    }
+
+    @Test
+    public void testEquals() {
+        assertTrue(!m12CHF.equals(null));
+        assertEquals(m12CHF, m12CHF);
+        assertEquals(m12CHF, new Money(12, "CHF"));
+        assertTrue(!m12CHF.equals(m14CHF));
+    }
+}
+
+8) @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        MoneyBag other = (MoneyBag) obj;
+        return fMonies.equals(other.fMonies);
+    }
+
+12)import static org.junit.Assert.assertEquals;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public class MoneyBagTest {
+    private Money f12CHF;
+    private Money f7USD;
+    private MoneyBag fMB1;
+    private MoneyBag fMB2;
+
+    @Before
+    public void setUp() {
+        f12CHF = new Money(12, "CHF");
+        f7USD = new Money(7, "USD");
+        fMB1 = new MoneyBag(f12CHF);
+        fMB2 = new MoneyBag(f7USD);
+    }
+
+    @Test
+    public void testMixedSimpleAdd() {
+        Money bag[] = { f12CHF, f7USD };
+        MoneyBag expected = new MoneyBag(bag);
+        assertEquals(expected, f12CHF.add(f7USD));
+    }
+
+    @Test
+    public void testBagSimpleAdd() {
+        MoneyBag expected = new MoneyBag(f12CHF, f7USD);
+        assertEquals(expected, fMB1.add(f7USD));
+    }
+
+    @Test
+    public void testSimpleBagAdd() {
+        MoneyBag expected = new MoneyBag(f12CHF, f7USD);
+        assertEquals(expected, f12CHF.add(fMB2));
+    }
+
+    @Test
+    public void testBagBagAdd() {
+        MoneyBag expected = new MoneyBag(f12CHF, f7USD);
+        assertEquals(expected, fMB1.add(fMB2));
+    }
+}
+
+13) Dans interface IMoney : 
+package fr.emse.test;
+
+interface IMoney {
+    IMoney addMoney(Money m);
+    IMoney addMoneyBag(MoneyBag mb);
+}
+
+Dans Class Money : 
+class Money implements IMoney {
+    private int fAmount;
+    private String fCurrency;
+
+    public Money(int amount, String currency) {
+        fAmount = amount;
+        fCurrency = currency;
+    }
+
+    public int amount() {
+        return fAmount;
+    }
+
+    public String currency() {
+        return fCurrency;
+    }
+
+    public IMoney add(IMoney m) {
+        return m.addMoney(this);
+    }
+
+    public IMoney addMoney(Money m) {
+        if (currency().equals(m.currency())) {
+            return new Money(amount() + m.amount(), currency());
+        } else {
+            // Handle different currencies
+            return null; // For simplicity, returning null
+        }
+    }
+
+    public IMoney addMoneyBag(MoneyBag mb) {
+        return mb.addMoney(this);
+    }
+}
+
+Dans class MoneyBag : 
+class Money implements IMoney {
+    private int fAmount;
+    private String fCurrency;
+
+    public Money(int amount, String currency) {
+        fAmount = amount;
+        fCurrency = currency;
+    }
+
+    public int amount() {
+        return fAmount;
+    }
+
+    public String currency() {
+        return fCurrency;
+    }
+
+    public IMoney add(IMoney m) {
+        return m.addMoney(this);
+    }
+
+    public IMoney addMoney(Money m) {
+        if (currency().equals(m.currency())) {
+            return new Money(amount() + m.amount(), currency());
+        } else {
+            // Handle different currencies
+            return null; // For simplicity, returning null
+        }
+    }
+
+    public IMoney addMoneyBag(MoneyBag mb) {
+        return mb.addMoney(this);
+    }
+}
+
+Et les methodes add/addMoney/ addMoneyBag : 
+public IMoney add(IMoney m) {
+        return m.addMoneyBag(this);
+    }
+
+    public IMoney addMoney(Money m) {
+        fMonies.add(m);
+        return this;
+    }
+
+    public IMoney addMoneyBag(MoneyBag mb) {
+        for (Money m : mb.fMonies) {
+            appendMoney(m);
+        }
+        return this;
+    }
+
+14) import static org.junit.Assert.assertEquals;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public class MoneyBagSimplificationTest {
+    private Money f12CHF;
+    private Money f7USD;
+
+    @Before
+    public void setUp() {
+        f12CHF = new Money(12, "CHF");
+        f7USD = new Money(7, "USD");
+    }
+
+    @Test
+    public void testSimplifyMoneyBagWithSingleValue() {
+        MoneyBag mb = new MoneyBag(f12CHF, f7USD);
+        Money result = (Money) mb.add(f12CHF.negate());
+        assertEquals(f7USD, result);
+    }
+
+    @Test
+    public void testSimplifyMoneyBagWithMultipleValues() {
+        MoneyBag mb = new MoneyBag(f12CHF, f7USD);
+        Money result = (Money) mb.add(f12CHF.negate().add(f7USD.negate()));
+        assertEquals(0, result.amount());
+    }
+
+    @Test
+    public void testNoSimplificationNeeded() {
+        MoneyBag mb = new MoneyBag(f12CHF, f7USD);
+        Money result = (Money) mb.add(new Money(5, "USD"));
+        assertEquals(mb, result);
+    }
+}
+
+15)import java.util.Vector;
+
+class Money implements IMoney {
+    private int fAmount;
+    private String fCurrency;
+
+    public Money(int amount, String currency) {
+        fAmount = amount;
+        fCurrency = currency;
+    }
+
+    public int amount() {
+        return fAmount;
+    }
+
+    public String currency() {
+        return fCurrency;
+    }
+
+    public IMoney add(IMoney m) {
+        return m.addMoney(this);
+    }
+
+    public IMoney addMoney(Money m) {
+        if (currency().equals(m.currency())) {
+            int totalAmount = amount() + m.amount();
+            if (totalAmount == 0) {
+                return new Money(0, fCurrency);
+            } else {
+                return new Money(totalAmount, fCurrency);
+            }
+        } else {
+            // Handle different currencies
+            return null; // For simplicity, returning null
+        }
+    }
+
+    public IMoney addMoneyBag(MoneyBag mb) {
+        return mb.addMoney(this);
+    }
+}
+
+class MoneyBag implements IMoney {
+    private Vector<Money> fMonies = new Vector<Money>();
+
+    public MoneyBag(Money m1, Money m2) {
+        appendMoney(m1);
+        appendMoney(m2);
+    }
+
+    public MoneyBag(Money bag[]) {
+        for (int i = 0; i < bag.length; i++)
+            appendMoney(bag[i]);
+    }
+
+    private void appendMoney(Money m) {
+        if (fMonies.isEmpty()) {
+            fMonies.add(m);
+        } else {
+            int i = 0;
+            while ((i < fMonies.size())
+                    && (!(fMonies.get(i).currency().equals(m.currency()))))
+                i++;
+            if (i >= fMonies.size()) {
+                fMonies.add(m);
+            } else {
+                fMonies.set(i, new Money(fMonies.get(i).amount() +
+                        m.amount(),
+                        m.currency()));
+            }
+        }
+    }
+
+    public IMoney add(IMoney m) {
+        return m.addMoneyBag(this);
+    }
+
+    public IMoney addMoney(Money m) {
+        appendMoney(m);
+        return this;
+    }
+
+    public IMoney addMoneyBag(MoneyBag mb) {
+        for (Money m : mb.fMonies) {
+            appendMoney(m);
+        }
+        return this;
+    }
+}  
